@@ -4,28 +4,29 @@ library(shiny)
 library(tidyquant)
 library(tidyverse)
 
+# Source helpers
+source_helpers <- function() {
+  helper_files <- list.files("R/helpers", pattern = "\\.R$", full.names = TRUE)
+  sapply(helper_files, source)
+}
+source_helpers()
+
 # Global values
 
 ## Ticker definitions
-tickers_non_esg <- c("VTI", "VT", "IAUM")
-tickers_esg <- c("ESGV", "VSGX", "FGDL")
-all_tickers <- c(tickers_non_esg, tickers_esg)
+tickers <- tibble(
+  symbol = c("VTI", "VT", "IAUM", "ESGV", "VSGX", "FGDL"),
+  stock_type = c(rep("Non-ESG", 3), rep("ESG", 3)),
+  asset_type = c(rep(c("US Stock", "Global Stock", "Gold"), 2)),
+)
 
 ## Load all data at startup
 data <- tq_get(
-  x = all_tickers,
+  x = tickers$symbol,
   get = "stock.prices",
   from = "2020-01-01",
   to = Sys.Date()
 )
-
-# Helper function: Calculate max drawdown
-calc_max_drawdown <- function(prices) {
-  cummax_val <- cummax(prices)
-  drawdowns <- (prices - cummax_val) / cummax_val
-  max_drawdown <- max(drawdowns)
-  return(max_drawdown)
-}
 
 # Server
 server <- function(input, output, session) {
@@ -45,11 +46,19 @@ server <- function(input, output, session) {
 
     errors <- c()
 
-    # Check if start date and end date are valid
+    # Check if start date is before end date
     if (input$date_start >= input$date_end) {
       errors <- c(
         errors,
         "Start date must be before end date"
+      )
+    }
+
+    # Check if end date is after start date
+    if (input$date_end < input$date_start) {
+      errors <- c(
+        errors,
+        "End date must be after start date"
       )
     }
 
@@ -85,6 +94,7 @@ server <- function(input, output, session) {
 
   # === DATA FILTERING ===
 
+  # Filter by date
   data_filtered <- reactive({
     req(input$date_start, input$date_end)
     data |>
@@ -93,44 +103,25 @@ server <- function(input, output, session) {
 
   # === NON-ESG PORTFOLIO ===
 
+  ticker_subset_non_esg <- reactive(get_ticker_subset(tickers, "Non-ESG"))
+
   data_tickers_non_esg <- reactive({
-    tibble(
-      symbol = tickers_non_esg,
-      prop = c(
+    get_prop_table(
+      ticker_subset_non_esg(),
+      c(
         input$proportion_non_esg_1,
         input$proportion_non_esg_2,
         input$proportion_non_esg_3
-      ) /
-        100
+      )
     )
   })
 
   data_dtd_non_esg <- reactive({
-    data_filtered() |>
-      filter(symbol %in% tickers_non_esg) |>
-      arrange(date) |>
-      mutate(
-        first_price = first(adjusted),
-        .by = symbol
-      ) |>
-      left_join(data_tickers_non_esg(), by = "symbol") |>
-      mutate(
-        diff_dtd = (adjusted - first_price) / first_price,
-        diff_dtd_pond = diff_dtd * prop
-      )
+    calc_dtd(data_filtered(), data_tickers_non_esg())
   })
 
   data_portfolio_non_esg <- reactive({
-    data_dtd_non_esg() |>
-      summarize(
-        diff_dtd_portfolio = sum(diff_dtd_pond),
-        .by = date
-      ) |>
-      mutate(
-        symbol = "PORTFOLIO",
-        diff_dtd = diff_dtd_portfolio
-      ) |>
-      select(-diff_dtd_portfolio)
+    calc_portfolio(data_dtd_non_esg())
   })
 
   data_dtd_with_portfolio_non_esg <- reactive({
@@ -142,96 +133,35 @@ server <- function(input, output, session) {
 
   stats_non_esg <- reactive({
     validate(validate_inputs()$valid, validate_inputs()$errors)
-
-    dtd_data <- data_dtd_non_esg()
-
-    stock_stats <- dtd_data |>
-      group_by(symbol) |>
-      summarize(
-        total_return = last(diff_dtd) * 100,
-        volatility = sd(diff(adjusted) / lag(adjusted), na.rm = TRUE) *
-          sqrt(252) *
-          100,
-        max_drawdown = calc_max_drawdown(adjusted) * 100,
-        .groups = "drop"
-      ) |>
-      left_join(data_tickers_non_esg(), by = "symbol") |>
-      mutate(
-        weighted_return = total_return * prop,
-        weighted_volatility = volatility * prop,
-        weighted_drawdown = max_drawdown * prop
-      )
-
-    portfolio_return <- sum(stock_stats$weighted_return)
-    portfolio_volatility <- sum(stock_stats$weighted_volatility)
-    portfolio_drawdown <- sum(stock_stats$weighted_drawdown)
-
-    bind_rows(
-      stock_stats |> select(symbol, total_return, volatility, max_drawdown),
-      tibble(
-        symbol = "PORTFOLIO",
-        total_return = portfolio_return,
-        volatility = portfolio_volatility,
-        max_drawdown = portfolio_drawdown
-      )
-    ) |>
-      mutate(
-        total_return = round(total_return, 2),
-        volatility = round(volatility, 2),
-        max_drawdown = round(max_drawdown, 2)
-      )
+    calc_stats(data_dtd_non_esg(), data_tickers_non_esg())
   })
 
   corr_non_esg <- reactive({
     validate(validate_inputs()$valid, validate_inputs()$errors)
-
-    data_dtd_with_portfolio_non_esg() |>
-      pivot_wider(names_from = symbol, values_from = diff_dtd) |>
-      select(-date) |>
-      correlate() |>
-      mutate(across(where(is.numeric), ~ round(.x, 3)))
+    calc_corr(data_dtd_with_portfolio_non_esg())
   })
 
   # === ESG PORTFOLIO ===
 
+  ticker_subset_esg <- reactive(get_ticker_subset(tickers, "ESG"))
+
   data_tickers_esg <- reactive({
-    tibble(
-      symbol = tickers_esg,
-      prop = c(
+    get_prop_table(
+      ticker_subset_esg(),
+      c(
         input$proportion_esg_1,
         input$proportion_esg_2,
         input$proportion_esg_3
-      ) /
-        100
+      )
     )
   })
 
   data_dtd_esg <- reactive({
-    data_filtered() |>
-      filter(symbol %in% tickers_esg) |>
-      arrange(date) |>
-      mutate(
-        first_price = first(adjusted),
-        .by = symbol
-      ) |>
-      left_join(data_tickers_esg(), by = "symbol") |>
-      mutate(
-        diff_dtd = (adjusted - first_price) / first_price,
-        diff_dtd_pond = diff_dtd * prop
-      )
+    calc_dtd(data_filtered(), data_tickers_esg())
   })
 
   data_portfolio_esg <- reactive({
-    data_dtd_esg() |>
-      summarize(
-        diff_dtd_portfolio = sum(diff_dtd_pond),
-        .by = date
-      ) |>
-      mutate(
-        symbol = "PORTFOLIO",
-        diff_dtd = diff_dtd_portfolio
-      ) |>
-      select(-diff_dtd_portfolio)
+    calc_portfolio(data_dtd_esg())
   })
 
   data_dtd_with_portfolio_esg <- reactive({
@@ -243,114 +173,32 @@ server <- function(input, output, session) {
 
   stats_esg <- reactive({
     validate(validate_inputs()$valid, validate_inputs()$errors)
-
-    dtd_data <- data_dtd_esg()
-
-    stock_stats <- dtd_data |>
-      group_by(symbol) |>
-      summarize(
-        total_return = last(diff_dtd) * 100,
-        volatility = sd(diff(adjusted) / lag(adjusted), na.rm = TRUE) *
-          sqrt(252) *
-          100,
-        max_drawdown = calc_max_drawdown(adjusted) * 100,
-        .groups = "drop"
-      ) |>
-      left_join(data_tickers_esg(), by = "symbol") |>
-      mutate(
-        weighted_return = total_return * prop,
-        weighted_volatility = volatility * prop,
-        weighted_drawdown = max_drawdown * prop
-      )
-
-    portfolio_return <- sum(stock_stats$weighted_return)
-    portfolio_volatility <- sum(stock_stats$weighted_volatility)
-    portfolio_drawdown <- sum(stock_stats$weighted_drawdown)
-
-    bind_rows(
-      stock_stats |> select(symbol, total_return, volatility, max_drawdown),
-      tibble(
-        symbol = "PORTFOLIO",
-        total_return = portfolio_return,
-        volatility = portfolio_volatility,
-        max_drawdown = portfolio_drawdown
-      )
-    ) |>
-      mutate(
-        total_return = round(total_return, 2),
-        volatility = round(volatility, 2),
-        max_drawdown = round(max_drawdown, 2)
-      )
+    calc_stats(data_dtd_esg(), data_tickers_esg())
   })
 
   corr_esg <- reactive({
     validate(validate_inputs()$valid, validate_inputs()$errors)
-
-    data_dtd_with_portfolio_esg() |>
-      pivot_wider(names_from = symbol, values_from = diff_dtd) |>
-      select(-date) |>
-      correlate() |>
-      mutate(across(where(is.numeric), ~ round(.x, 3)))
+    calc_corr(data_dtd_with_portfolio_esg())
   })
 
   # === PLOTS ===
 
   p_dtd_non_esg <- reactive({
     validate(validate_inputs()$valid, validate_inputs()$errors)
-
-    plot_data <- data_dtd_with_portfolio_non_esg() |>
-      mutate(symbol = factor(symbol, levels = c(tickers_non_esg, "PORTFOLIO")))
-
-    ggplot(plot_data, aes(date, diff_dtd, color = symbol)) +
-      geom_line(
-        data = filter(plot_data, symbol != "PORTFOLIO"),
-        linewidth = 0.8
-      ) +
-      geom_line(
-        data = filter(plot_data, symbol == "PORTFOLIO"),
-        linewidth = 1.5,
-        linetype = "dashed"
-      ) +
-      geom_hline(yintercept = 0, linetype = "dotted", color = "gray50") +
-      scale_x_date(date_breaks = "3 months", date_labels = "%b-%Y") +
-      scale_color_viridis_d() +
-      labs(
-        title = "Non-ESG Portfolio: DTD Change Rate",
-        color = "Symbol"
-      ) +
-      xlab("Date") +
-      ylab("DTD Change Rate") +
-      theme_bw() +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    build_plot(
+      data_dtd_with_portfolio_non_esg(),
+      ticker_subset_non_esg(),
+      "Non-ESG Portfolio: DTD Change Rate"
+    )
   })
 
   p_dtd_esg <- reactive({
     validate(validate_inputs()$valid, validate_inputs()$errors)
-
-    plot_data <- data_dtd_with_portfolio_esg() |>
-      mutate(symbol = factor(symbol, levels = c(tickers_esg, "PORTFOLIO")))
-
-    ggplot(plot_data, aes(date, diff_dtd, color = symbol)) +
-      geom_line(
-        data = filter(plot_data, symbol != "PORTFOLIO"),
-        linewidth = 0.8
-      ) +
-      geom_line(
-        data = filter(plot_data, symbol == "PORTFOLIO"),
-        linewidth = 1.5,
-        linetype = "dashed"
-      ) +
-      geom_hline(yintercept = 0, linetype = "dotted", color = "gray50") +
-      scale_x_date(date_breaks = "3 months", date_labels = "%b-%Y") +
-      scale_color_viridis_d() +
-      labs(
-        title = "ESG Portfolio: DTD Change Rate",
-        color = "Symbol"
-      ) +
-      xlab("Date") +
-      ylab("DTD Change Rate") +
-      theme_bw() +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    build_plot(
+      data_dtd_with_portfolio_esg(),
+      ticker_subset_esg(),
+      "ESG Portfolio: DTD Change Rate"
+    )
   })
 
   # === OUTPUTS ===
