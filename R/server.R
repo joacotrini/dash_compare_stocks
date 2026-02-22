@@ -101,10 +101,13 @@ server <- function(input, output, session) {
       filter(date >= input$date_start, date <= input$date_end)
   })
 
-  # === NON-ESG PORTFOLIO ===
+  # === COMPUTATION ===
 
+  # Subset tickers by stock type
   ticker_subset_non_esg <- reactive(get_ticker_subset(tickers, "Non-ESG"))
+  ticker_subset_esg <- reactive(get_ticker_subset(tickers, "ESG"))
 
+  # Calculate proportions
   data_tickers_non_esg <- reactive({
     get_prop_table(
       ticker_subset_non_esg(),
@@ -115,35 +118,6 @@ server <- function(input, output, session) {
       )
     )
   })
-
-  data_dtd_non_esg <- reactive({
-    calc_dtd(data_filtered(), data_tickers_non_esg())
-  })
-
-  data_portfolio_non_esg <- reactive({
-    calc_portfolio(data_dtd_non_esg())
-  })
-
-  data_dtd_with_portfolio_non_esg <- reactive({
-    bind_rows(
-      data_dtd_non_esg() |> select(date, symbol, diff_dtd),
-      data_portfolio_non_esg()
-    )
-  })
-
-  stats_non_esg <- reactive({
-    validate(validate_inputs()$valid, validate_inputs()$errors)
-    calc_stats(data_dtd_non_esg(), data_tickers_non_esg())
-  })
-
-  corr_non_esg <- reactive({
-    validate(validate_inputs()$valid, validate_inputs()$errors)
-    calc_corr(data_dtd_with_portfolio_non_esg())
-  })
-
-  # === ESG PORTFOLIO ===
-
-  ticker_subset_esg <- reactive(get_ticker_subset(tickers, "ESG"))
 
   data_tickers_esg <- reactive({
     get_prop_table(
@@ -156,12 +130,30 @@ server <- function(input, output, session) {
     )
   })
 
+  # Calculate date-to-date (DTD) change rates
+  data_dtd_non_esg <- reactive({
+    calc_dtd(data_filtered(), data_tickers_non_esg())
+  })
+
   data_dtd_esg <- reactive({
     calc_dtd(data_filtered(), data_tickers_esg())
   })
 
+  # Calculate portfolio-level DTD
+  data_portfolio_non_esg <- reactive({
+    calc_portfolio(data_dtd_non_esg())
+  })
+
   data_portfolio_esg <- reactive({
     calc_portfolio(data_dtd_esg())
+  })
+
+  # Join tables for follwoing computations
+  data_dtd_with_portfolio_non_esg <- reactive({
+    bind_rows(
+      data_dtd_non_esg() |> select(date, symbol, diff_dtd),
+      data_portfolio_non_esg()
+    )
   })
 
   data_dtd_with_portfolio_esg <- reactive({
@@ -171,9 +163,23 @@ server <- function(input, output, session) {
     )
   })
 
+  # === TABLES ===
+
+  # Calculate stats
+  stats_non_esg <- reactive({
+    validate(validate_inputs()$valid, validate_inputs()$errors)
+    calc_stats(data_dtd_non_esg(), data_tickers_non_esg())
+  })
+
   stats_esg <- reactive({
     validate(validate_inputs()$valid, validate_inputs()$errors)
     calc_stats(data_dtd_esg(), data_tickers_esg())
+  })
+
+  # Calculate correlation matrices
+  corr_non_esg <- reactive({
+    validate(validate_inputs()$valid, validate_inputs()$errors)
+    calc_corr(data_dtd_with_portfolio_non_esg())
   })
 
   corr_esg <- reactive({
