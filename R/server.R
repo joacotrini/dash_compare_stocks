@@ -189,6 +189,15 @@ server <- function(input, output, session) {
 
   # === PLOTS ===
 
+  p_comparison <- reactive({
+    validate(validate_inputs()$valid, validate_inputs()$errors)
+    build_comparison_plot(
+      data_portfolio_non_esg(),
+      data_portfolio_esg(),
+      "Portfolio Comparison: ESG vs Non-ESG"
+    )
+  })
+
   p_dtd_non_esg <- reactive({
     validate(validate_inputs()$valid, validate_inputs()$errors)
     build_plot(
@@ -226,9 +235,39 @@ server <- function(input, output, session) {
 
   output$stats_non_esg <- renderTable(stats_non_esg())
   output$corr_non_esg <- renderTable(corr_non_esg())
+  output$p_comparison <- renderPlot(p_comparison())
   output$p_dtd_non_esg <- renderPlot(p_dtd_non_esg())
 
   output$stats_esg <- renderTable(stats_esg())
   output$corr_esg <- renderTable(corr_esg())
   output$p_dtd_esg <- renderPlot(p_dtd_esg())
+
+  # === VALUE BOXES ===
+  output$vb_return_non_esg <- renderText({
+    validate(validate_inputs()$valid, validate_inputs()$errors)
+    stats <- stats_non_esg()
+    portfolio_row <- stats |> filter(symbol == "PORTFOLIO")
+    paste0(portfolio_row$total_return, "%")
+  })
+
+  output$vb_volatility_non_esg <- renderText({
+    validate(validate_inputs()$valid, validate_inputs()$errors)
+    stats <- stats_non_esg()
+    portfolio_row <- stats |> filter(symbol == "PORTFOLIO")
+    paste0(portfolio_row$sd, "%")
+  })
+
+  output$vb_return_esg <- renderText({
+    validate(validate_inputs()$valid, validate_inputs()$errors)
+    stats <- stats_esg()
+    portfolio_row <- stats |> filter(symbol == "PORTFOLIO")
+    paste0(portfolio_row$total_return, "%")
+  })
+
+  output$vb_volatility_esg <- renderText({
+    validate(validate_inputs()$valid, validate_inputs()$errors)
+    stats <- stats_esg()
+    portfolio_row <- stats |> filter(symbol == "PORTFOLIO")
+    paste0(portfolio_row$sd, "%")
+  })
 }
