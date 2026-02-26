@@ -22,16 +22,16 @@ ui <- page_sidebar(
     
     card(
       card_header("Non-ESG Proportions", class = "bg-primary text-white"),
-      sliderInput("proportion_non_esg_1", "VTI", min = 0, max = 100, value = 34, step = 1),
-      sliderInput("proportion_non_esg_2", "VT", min = 0, max = 100, value = 33, step = 1),
-      sliderInput("proportion_non_esg_3", "IAUM", min = 0, max = 100, value = 33, step = 1)
+      sliderInput("proportion_non_esg_1", "VTI", min = 0, max = 100, value = 50, step = 1),
+      sliderInput("proportion_non_esg_2", "VT", min = 0, max = 100, value = 40, step = 1),
+      textOutput("proportion_non_esg_3_display")
     ),
     
     card(
       card_header("ESG Proportions", class = "bg-success text-white"),
-      sliderInput("proportion_esg_1", "ESGV", min = 0, max = 100, value = 34, step = 1),
-      sliderInput("proportion_esg_2", "VSGX", min = 0, max = 100, value = 33, step = 1),
-      sliderInput("proportion_esg_3", "FGDL", min = 0, max = 100, value = 33, step = 1)
+      sliderInput("proportion_esg_1", "ESGV", min = 0, max = 100, value = 50, step = 1),
+      sliderInput("proportion_esg_2", "VSGX", min = 0, max = 100, value = 40, step = 1),
+      textOutput("proportion_esg_3_display")
     ),
     
     uiOutput("validation_errors_ui")
@@ -40,13 +40,21 @@ ui <- page_sidebar(
   # === MAIN CONTENT ===
   accordion(
     accordion_panel(
+      "Stock Overview",
+      card(
+        card_header("Individual Stock Metrics", class = "bg-dark text-white"),
+        tableOutput("stocks_info")
+      )
+    ),
+    
+    accordion_panel(
       "Portfolio Comparison",
       card(
         full_screen = TRUE,
         min_height = "400px",
         card_header("ESG vs Non-ESG", class = "bg-dark text-white"),
         card_body(
-          plotOutput("p_comparison", fill = TRUE)
+          plotlyOutput("p_comparison", fill = TRUE)
         )
       ),
       layout_column_wrap(
@@ -57,13 +65,13 @@ ui <- page_sidebar(
           layout_column_wrap(
             width = 1/2,
             value_box(
-              title = "Total Return",
+              title = "Ann. Return",
               textOutput("vb_return_non_esg"),
               showcase = bs_icon("graph-up-arrow"),
               theme = "primary"
             ),
             value_box(
-              title = "Volatility (SD)",
+              title = "Ann. Volatility",
               textOutput("vb_volatility_non_esg"),
               showcase = bs_icon("bar-chart-fill"),
               theme = "primary"
@@ -76,13 +84,13 @@ ui <- page_sidebar(
           layout_column_wrap(
             width = 1/2,
             value_box(
-              title = "Total Return",
+              title = "Ann. Return",
               textOutput("vb_return_esg"),
               showcase = bs_icon("graph-up-arrow"),
               theme = "success"
             ),
             value_box(
-              title = "Volatility (SD)",
+              title = "Ann. Volatility",
               textOutput("vb_volatility_esg"),
               showcase = bs_icon("bar-chart-fill"),
               theme = "success"
@@ -97,9 +105,9 @@ ui <- page_sidebar(
       card(
         full_screen = TRUE,
         min_height = "500px",
-        card_header("DTD Change Rate", class = "bg-primary text-white"),
+        card_header("Cumulative Return", class = "bg-primary text-white"),
         card_body(
-          plotOutput("p_dtd_non_esg", fill = TRUE)
+          plotlyOutput("p_dtd_non_esg", fill = TRUE)
         ),
         card_body(
           layout_column_wrap(
@@ -116,9 +124,9 @@ ui <- page_sidebar(
       card(
         full_screen = TRUE,
         min_height = "500px",
-        card_header("DTD Change Rate", class = "bg-success text-white"),
+        card_header("Cumulative Return", class = "bg-success text-white"),
         card_body(
-          plotOutput("p_dtd_esg", fill = TRUE)
+          plotlyOutput("p_dtd_esg", fill = TRUE)
         ),
         card_body(
           layout_column_wrap(
