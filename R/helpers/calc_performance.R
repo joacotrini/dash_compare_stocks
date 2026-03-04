@@ -4,6 +4,11 @@ calc_performance <- function(portfolio_returns) {
       Ra = portfolio.returns,
       performance_fun = table.AnnualizedReturns
     ) |>
+    rename(
+      Annualized.Return = AnnualizedReturn,
+      SharpeRatio = 'AnnualizedSharpe(Rf=0%)',
+      Annualized.Volatility = AnnualizedStdDev
+    ) |>
     pivot_longer(
       everything(),
       names_to = "metric",
