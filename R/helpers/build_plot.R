@@ -32,5 +32,5 @@ build_plot <- function(returns_with_portfolio, ticker_subset, title) {
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-  ggplotly(p, tooltip = "text") |> config(displayModeBar = FALSE)
+  ggplotly(p) |> config(displayModeBar = FALSE)
 }

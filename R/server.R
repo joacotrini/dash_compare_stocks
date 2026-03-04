@@ -207,41 +207,41 @@ server <- function(input, output, session) {
 
   # Calculate performance metrics using tidyquant
   perf_non_esg <- reactive({
-    validate(validate_inputs()$valid, validate_inputs()$errors)
+    validate(need(is.null(validate_inputs()$errors), paste(validate_inputs()$errors, collapse = "\n")))
     calc_performance(data_portfolio_non_esg())
   })
 
   perf_esg <- reactive({
-    validate(validate_inputs()$valid, validate_inputs()$errors)
+    validate(need(is.null(validate_inputs()$errors), paste(validate_inputs()$errors, collapse = "\n")))
     calc_performance(data_portfolio_esg())
   })
 
   # Calculate max drawdown
   dd_non_esg <- reactive({
-    validate(validate_inputs()$valid, validate_inputs()$errors)
+    validate(need(is.null(validate_inputs()$errors), paste(validate_inputs()$errors, collapse = "\n")))
     calc_max_drawdown(data_portfolio_non_esg())
   })
 
   dd_esg <- reactive({
-    validate(validate_inputs()$valid, validate_inputs()$errors)
+    validate(need(is.null(validate_inputs()$errors), paste(validate_inputs()$errors, collapse = "\n")))
     calc_max_drawdown(data_portfolio_esg())
   })
 
   # Calculate correlation matrices
   corr_non_esg <- reactive({
-    validate(validate_inputs()$valid, validate_inputs()$errors)
+    validate(need(is.null(validate_inputs()$errors), paste(validate_inputs()$errors, collapse = "\n")))
     calc_corr(data_returns_with_portfolio_non_esg())
   })
 
   corr_esg <- reactive({
-    validate(validate_inputs()$valid, validate_inputs()$errors)
+    validate(need(is.null(validate_inputs()$errors), paste(validate_inputs()$errors, collapse = "\n")))
     calc_corr(data_returns_with_portfolio_esg())
   })
 
   # === PLOTS ===
 
   p_comparison <- reactive({
-    validate(validate_inputs()$valid, validate_inputs()$errors)
+    validate(need(is.null(validate_inputs()$errors), paste(validate_inputs()$errors, collapse = "\n")))
     build_comparison_plot(
       data_cum_portfolio_non_esg(),
       data_cum_portfolio_esg(),
@@ -250,7 +250,7 @@ server <- function(input, output, session) {
   })
 
   p_dtd_non_esg <- reactive({
-    validate(validate_inputs()$valid, validate_inputs()$errors)
+    validate(need(is.null(validate_inputs()$errors), paste(validate_inputs()$errors, collapse = "\n")))
     build_plot(
       data_returns_with_portfolio_non_esg(),
       ticker_subset_non_esg(),
@@ -259,7 +259,7 @@ server <- function(input, output, session) {
   })
 
   p_dtd_esg <- reactive({
-    validate(validate_inputs()$valid, validate_inputs()$errors)
+    validate(need(is.null(validate_inputs()$errors), paste(validate_inputs()$errors, collapse = "\n")))
     build_plot(
       data_returns_with_portfolio_esg(),
       ticker_subset_esg(),
@@ -295,28 +295,28 @@ server <- function(input, output, session) {
 
   # === VALUE BOXES ===
   output$vb_return_non_esg <- renderText({
-    validate(validate_inputs()$valid, validate_inputs()$errors)
+    validate(need(is.null(validate_inputs()$errors), paste(validate_inputs()$errors, collapse = "\n")))
     perf <- perf_non_esg()
     ret <- perf |> filter(metric == "Annualized.Return") |> pull(value)
     ret
   })
 
   output$vb_volatility_non_esg <- renderText({
-    validate(validate_inputs()$valid, validate_inputs()$errors)
+    validate(need(is.null(validate_inputs()$errors), paste(validate_inputs()$errors, collapse = "\n")))
     perf <- perf_non_esg()
     vol <- perf |> filter(metric == "Annualized.Volatility") |> pull(value)
     vol
   })
 
   output$vb_return_esg <- renderText({
-    validate(validate_inputs()$valid, validate_inputs()$errors)
+    validate(need(is.null(validate_inputs()$errors), paste(validate_inputs()$errors, collapse = "\n")))
     perf <- perf_esg()
     ret <- perf |> filter(metric == "Annualized.Return") |> pull(value)
     ret
   })
 
   output$vb_volatility_esg <- renderText({
-    validate(validate_inputs()$valid, validate_inputs()$errors)
+    validate(need(is.null(validate_inputs()$errors), paste(validate_inputs()$errors, collapse = "\n")))
     perf <- perf_esg()
     vol <- perf |> filter(metric == "Annualized.Volatility") |> pull(value)
     vol
@@ -335,7 +335,7 @@ server <- function(input, output, session) {
 
   # === STOCK INFO TABLE ===
   stocks_info_data <- reactive({
-    validate(validate_inputs()$valid, validate_inputs()$errors)
+    validate(need(is.null(validate_inputs()$errors), paste(validate_inputs()$errors, collapse = "\n")))
 
     # Combine daily returns from both portfolios
     returns_combined <- bind_rows(
