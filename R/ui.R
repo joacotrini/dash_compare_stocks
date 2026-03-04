@@ -10,7 +10,7 @@ ui <- page_sidebar(
     bootswatch = "lux",
     primary = "#b9f",
     success = "#00a700",
-    #base_font = font_collection(font_google("Inter"), "system-ui", "sans-serif")
+    base_font = font_collection(font_google("Inter"), "system-ui", "sans-serif")
   ),
 
   title = "Portfolio Comparison: ESG vs Non-ESG",
