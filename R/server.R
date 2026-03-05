@@ -231,6 +231,33 @@ server <- function(input, output, session) {
     calc_max_drawdown(data_portfolio_esg())
   })
 
+  # Combine performance metrics with max drawdown for display tables
+  stats_non_esg <- reactive({
+    validate(need(
+      is.null(validate_inputs()$errors),
+      paste(validate_inputs()$errors, collapse = "\n")
+    ))
+    perf <- perf_non_esg()
+    dd <- dd_non_esg()
+    bind_rows(
+      perf,
+      tibble(metric = "Max Drawdown", value = dd$MaxDrawdown)
+    )
+  })
+
+  stats_esg <- reactive({
+    validate(need(
+      is.null(validate_inputs()$errors),
+      paste(validate_inputs()$errors, collapse = "\n")
+    ))
+    perf <- perf_esg()
+    dd <- dd_esg()
+    bind_rows(
+      perf,
+      tibble(metric = "Max Drawdown", value = dd$MaxDrawdown)
+    )
+  })
+
   # Calculate correlation matrices
   corr_non_esg <- reactive({
     validate(need(
@@ -303,12 +330,12 @@ server <- function(input, output, session) {
     }
   })
 
-  output$stats_non_esg <- renderTable(perf_non_esg())
+  output$stats_non_esg <- renderTable(stats_non_esg())
   output$corr_non_esg <- renderTable(corr_non_esg())
   output$p_comparison <- renderPlotly(p_comparison())
   output$p_dtd_non_esg <- renderPlotly(p_dtd_non_esg())
 
-  output$stats_esg <- renderTable(perf_esg())
+  output$stats_esg <- renderTable(stats_esg())
   output$corr_esg <- renderTable(corr_esg())
   output$p_dtd_esg <- renderPlotly(p_dtd_esg())
 

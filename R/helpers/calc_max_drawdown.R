@@ -2,24 +2,18 @@ calc_max_drawdown <- function(portfolio_returns) {
   dd <- portfolio_returns |>
     tq_performance(
       Ra = portfolio.returns,
-      performance_fun = table.Drawdowns
-    )
+      performance_fun = maxDrawdown
+    ) |>
+    rename(maxDrawdown = maxDrawdown.1)
 
   if (nrow(dd) > 0) {
-    dd |>
-      head(1) |>
-      transmute(
-        Start     = as.character(From),
-        Depth     = paste0(round(Depth * 100, 2), "%"),
-        Recovered = as.character(To),
-        ToT       = paste0(Length, " days")
-      )
+    # maxDrawdown returns a single value - just format it as percentage
+    tibble(
+      MaxDrawdown = paste0(round(dd$maxDrawdown[[1]] * 100, 2), "%")
+    )
   } else {
     tibble(
-      Start     = NA_character_,
-      Depth     = "0%",
-      Recovered = NA_character_,
-      ToT       = "0 days"
+      MaxDrawdown = "0%"
     )
   }
 }
