@@ -1,16 +1,27 @@
 build_plot <- function(returns_with_portfolio, ticker_subset, title) {
   library(plotly)
-  
+
   symbols <- ticker_subset |> pull(symbol)
 
   plot_data <- returns_with_portfolio |>
     mutate(symbol = factor(symbol, levels = c(symbols, "PORTFOLIO")))
 
-  p <- ggplot(plot_data, aes(date, diff_dtd, color = symbol, text = paste0(
-    "Date: ", format(date, "%Y-%m-%d"), "<br>",
-    "Symbol: ", symbol, "<br>",
-    "Return: ", scales::percent(diff_dtd, accuracy = 0.01)
-  ))) +
+  p <- plot_data |>
+    ggplot(aes(
+      date,
+      diff_dtd,
+      color = symbol,
+      text = paste0(
+        "Date: ",
+        format(date, "%Y-%m-%d"),
+        "<br>",
+        "Symbol: ",
+        symbol,
+        "<br>",
+        "Return: ",
+        scales::percent(diff_dtd, accuracy = 0.01)
+      )
+    )) +
     geom_line(
       data = filter(plot_data, symbol != "PORTFOLIO"),
       linewidth = 0.8

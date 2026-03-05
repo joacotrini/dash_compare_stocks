@@ -4,7 +4,7 @@ build_comparison_plot <- function(
   title
 ) {
   library(plotly)
-  
+
   plot_data <- bind_rows(
     data_portfolio_non_esg |> mutate(portfolio = "Non-ESG"),
     data_portfolio_esg |> mutate(portfolio = "ESG")
@@ -12,11 +12,22 @@ build_comparison_plot <- function(
 
   p <- ggplot(
     plot_data,
-    aes(date, cumulative_return, color = portfolio, linetype = portfolio, text = paste0(
-      "Date: ", format(date, "%Y-%m-%d"), "<br>",
-      "Portfolio: ", portfolio, "<br>",
-      "Return: ", scales::percent(cumulative_return, accuracy = 0.01)
-    ))
+    aes(
+      date,
+      cumulative_return,
+      color = portfolio,
+      linetype = portfolio,
+      text = paste0(
+        "Date: ",
+        format(date, "%Y-%m-%d"),
+        "<br>",
+        "Portfolio: ",
+        portfolio,
+        "<br>",
+        "Return: ",
+        scales::percent(cumulative_return, accuracy = 0.01)
+      )
+    )
   ) +
     geom_line(linewidth = 1.2) +
     geom_hline(yintercept = 0, linetype = "dotted", color = "gray50") +

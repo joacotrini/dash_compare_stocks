@@ -6,6 +6,7 @@ calc_returns <- function(data_filtered, prop_table) {
     arrange(symbol, date) |>
     group_by(symbol) |>
     tq_mutate(
+      select = adjusted,
       mutate_fun = periodReturn,
       period = "daily",
       col_rename = "daily_return"

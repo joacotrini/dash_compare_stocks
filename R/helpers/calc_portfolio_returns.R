@@ -5,7 +5,6 @@ calc_portfolio_returns <- function(returns_data, prop_table) {
       assets_col = symbol,
       returns_col = daily_return,
       weights = prop_table |> select(symbol, weight = prop),
-      rebalance_on = "days",
       geometric = TRUE
     )
 }

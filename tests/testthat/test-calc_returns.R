@@ -1,6 +1,9 @@
 # Tests for calc_returns.R
+source("../../R/helpers/calc_returns.R")
 
-# Helper: create mock stock data
+# Helper: create mock stock data.
+# Only `symbol`, `date`, and `adjusted` are required — tq_mutate(select = adjusted)
+# passes just the adjusted column to periodReturn.
 create_mock_stock_data <- function() {
   tibble(
     symbol = rep(c("A", "B"), each = 5),
@@ -9,49 +12,69 @@ create_mock_stock_data <- function() {
   )
 }
 
+# --- Output columns ---
+
 test_that("calc_returns adds daily_return column", {
-  mock_data <- create_mock_stock_data()
-  prop_table <- tibble(symbol = c("A", "B"), prop = c(0.6, 0.4))
-  
-  result <- calc_returns(mock_data, prop_table)
-  
+  result <- calc_returns(
+    create_mock_stock_data(),
+    tibble(symbol = c("A", "B"), prop = c(0.6, 0.4))
+  )
+
   expect_true("daily_return" %in% names(result))
 })
 
-test_that("calc_returns filters to only symbols in prop_table", {
-  mock_data <- create_mock_stock_data()
-  prop_table <- tibble(symbol = c("A"), prop = c(1.0))
-  
-  result <- calc_returns(mock_data, prop_table)
-  
-  expect_equal(unique(result$symbol), "A")
+test_that("calc_returns preserves adjusted column", {
+  # tq_mutate appends daily_return without dropping existing columns,
+  # so adjusted must still be present for downstream use (e.g. stocks_info_data).
+  result <- calc_returns(
+    create_mock_stock_data(),
+    tibble(symbol = c("A", "B"), prop = c(0.6, 0.4))
+  )
+
+  expect_true("adjusted" %in% names(result))
 })
 
-test_that("calc_returns joins prop table correctly", {
-  mock_data <- create_mock_stock_data()
-  prop_table <- tibble(symbol = c("A", "B"), prop = c(0.6, 0.4))
-  
-  result <- calc_returns(mock_data, prop_table)
-  
+test_that("calc_returns joins prop column from prop_table", {
+  result <- calc_returns(
+    create_mock_stock_data(),
+    tibble(symbol = c("A", "B"), prop = c(0.6, 0.4))
+  )
+
   expect_true("prop" %in% names(result))
-  expect_equal(unique(result$prop), c(0.6, 0.4))
+  expect_equal(sort(unique(result$prop)), c(0.4, 0.6))
 })
 
-test_that("calc_returns handles single symbol", {
-  mock_data <- create_mock_stock_data() |> filter(symbol == "A")
-  prop_table <- tibble(symbol = c("A"), prop = c(1.0))
-  
-  result <- calc_returns(mock_data, prop_table)
-  
+# --- Filtering ---
+
+test_that("calc_returns filters to only symbols present in prop_table", {
+  result <- calc_returns(
+    create_mock_stock_data(),
+    tibble(symbol = "A", prop = 1.0)
+  )
+
+  expect_equal(unique(result$symbol), "A")
+})
+
+test_that("calc_returns handles a single-symbol prop_table", {
+  result <- calc_returns(
+    create_mock_stock_data() |> filter(symbol == "A"),
+    tibble(symbol = "A", prop = 1.0)
+  )
+
   expect_equal(unique(result$symbol), "A")
   expect_true("daily_return" %in% names(result))
 })
 
-test_that("calc_returns daily returns are reasonable (between -1 and 1)", {
-  mock_data <- create_mock_stock_data()
-  prop_table <- tibble(symbol = c("A", "B"), prop = c(0.5, 0.5))
-  
-  result <- calc_returns(mock_data, prop_table)
-  
-  expect_true(all(result$daily_return > -1 & result$daily_return < 1, na.rm = TRUE))
+# --- Value sanity ---
+
+test_that("calc_returns daily_return values are between -1 and 1", {
+  result <- calc_returns(
+    create_mock_stock_data(),
+    tibble(symbol = c("A", "B"), prop = c(0.5, 0.5))
+  )
+
+  expect_true(all(
+    result$daily_return > -1 & result$daily_return < 1,
+    na.rm = TRUE
+  ))
 })

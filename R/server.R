@@ -53,14 +53,6 @@ server <- function(input, output, session) {
       )
     }
 
-    # Check if end date is after start date
-    if (input$date_end < input$date_start) {
-      errors <- c(
-        errors,
-        "End date must be after start date"
-      )
-    }
-
     # Check if proportions sum to 100% (slider 1 + slider 2 + calculated <= 100)
     sum_non_esg <- input$proportion_non_esg_1 + input$proportion_non_esg_2
     sum_esg <- input$proportion_esg_1 + input$proportion_esg_2
@@ -384,7 +376,7 @@ server <- function(input, output, session) {
       data_returns_non_esg() |> select(symbol, date, adjusted, daily_return),
       data_returns_esg() |> select(symbol, date, adjusted, daily_return)
     ) |>
-      distinct(symbol, .keep_all = TRUE)
+      distinct(symbol, date, .keep_all = TRUE)
 
     # Get latest prices
     latest_prices <- data_filtered() |>

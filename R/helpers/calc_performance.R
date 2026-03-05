@@ -6,9 +6,9 @@ calc_performance <- function(portfolio_returns) {
     ) |>
     rename(
       Annualized.Return = AnnualizedReturn,
-      SharpeRatio = 'AnnualizedSharpe(Rf=0%)',
       Annualized.Volatility = AnnualizedStdDev
     ) |>
+    rename_with(~ "SharpeRatio", matches("Sharpe")) |>
     pivot_longer(
       everything(),
       names_to = "metric",
