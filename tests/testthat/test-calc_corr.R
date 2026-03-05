@@ -1,82 +1,88 @@
 # Tests for calc_corr.R
-
-# Load the function being tested
 source("../../R/helpers/calc_corr.R")
 
-# Helper: create mock returns with portfolio data
+# Helper: create mock returns with portfolio data.
+# Uses a fixed seed for deterministic correlations.
 create_mock_returns_with_portfolio <- function() {
+  set.seed(42)
   tibble(
-    date = rep(as.Date("2024-01-01") + 0:49, each = 4),
+    date   = rep(as.Date("2024-01-01") + 0:49, each = 4),
     symbol = rep(c("A", "B", "C", "PORTFOLIO"), times = 50),
     diff_dtd = c(
-      rnorm(50, 0.001, 0.01), # A
-      rnorm(50, 0.001, 0.01), # B
-      rnorm(50, 0.001, 0.01), # C
-      rnorm(50, 0.001, 0.008) # PORTFOLIO (lower vol)
+      rnorm(50, 0.001, 0.01),  # A
+      rnorm(50, 0.001, 0.01),  # B
+      rnorm(50, 0.001, 0.01),  # C
+      rnorm(50, 0.001, 0.008)  # PORTFOLIO (lower vol)
     )
   )
 }
 
-test_that("calc_corr returns correlation matrix", {
-  data <- create_mock_returns_with_portfolio()
+# --- Output shape ---
 
-  result <- calc_corr(data)
+test_that("calc_corr returns a data frame", {
+  result <- calc_corr(create_mock_returns_with_portfolio())
 
   expect_s3_class(result, "data.frame")
 })
 
-test_that("calc_corr matrix is square", {
-  data <- create_mock_returns_with_portfolio()
+test_that("calc_corr returns exactly 2 columns", {
+  result <- calc_corr(create_mock_returns_with_portfolio())
 
-  result <- calc_corr(data)
-
-  # Remove the 'term' column for dimension check
-  num_rows <- nrow(result)
-  num_cols <- ncol(result) - 1 # Subtract 'term' column
-  expect_equal(num_rows, num_cols)
+  expect_equal(ncol(result), 2)
 })
 
-test_that("calc_corr diagonal values are NA", {
-  data <- create_mock_returns_with_portfolio()
+test_that("calc_corr returns one row per non-portfolio symbol", {
+  result <- calc_corr(create_mock_returns_with_portfolio())
 
-  result <- calc_corr(data)
-
-  # Get numeric columns only
-  numeric_mat <- result |> select(-term) |> as.matrix()
-  diag_values <- diag(numeric_mat)
-
-  expect_true(all(is.na(diag_values)))
+  # 3 stocks (A, B, C) — PORTFOLIO row should be excluded
+  expect_equal(nrow(result), 3)
 })
 
-test_that("calc_corr is symmetric", {
-  data <- create_mock_returns_with_portfolio()
-  result <- calc_corr(data)
-  numeric_mat <- result |> select(-term) |> as.matrix()
+# --- Column names ---
 
-  # Fix diagonal and strip names for comparison
-  diag(numeric_mat) <- 1
-  dimnames(numeric_mat) <- NULL
+test_that("calc_corr has Stock column", {
+  result <- calc_corr(create_mock_returns_with_portfolio())
 
-  expect_equal(numeric_mat, t(numeric_mat), tolerance = 0.001)
+  expect_true("Stock" %in% names(result))
 })
 
-test_that("calc_corr has term column", {
-  data <- create_mock_returns_with_portfolio()
+test_that("calc_corr has 'Corr. with Portfolio' column", {
+  result <- calc_corr(create_mock_returns_with_portfolio())
 
-  result <- calc_corr(data)
-
-  expect_true("term" %in% names(result))
+  expect_true("Corr. with Portfolio" %in% names(result))
 })
 
-test_that("calc_corr handles single asset", {
-  data <- tibble(
-    date = as.Date("2024-01-01") + 0:49,
-    symbol = rep("A", 50),
-    diff_dtd = rnorm(50, 0.001, 0.01)
-  )
+# --- Content ---
 
-  result <- calc_corr(data)
+test_that("calc_corr does not include PORTFOLIO as a row", {
+  result <- calc_corr(create_mock_returns_with_portfolio())
 
-  # Should return 1x1 matrix with value 1
-  expect_equal(nrow(result), 1)
+  expect_false("PORTFOLIO" %in% result$Stock)
+})
+
+test_that("calc_corr Stock column contains all individual symbols", {
+  result <- calc_corr(create_mock_returns_with_portfolio())
+
+  expect_setequal(result$Stock, c("A", "B", "C"))
+})
+
+test_that("calc_corr correlation values are between -1 and 1", {
+  result <- calc_corr(create_mock_returns_with_portfolio())
+
+  expect_true(all(result$`Corr. with Portfolio` >= -1 &
+                  result$`Corr. with Portfolio` <= 1, na.rm = TRUE))
+})
+
+test_that("calc_corr results are sorted descending by correlation", {
+  result <- calc_corr(create_mock_returns_with_portfolio())
+
+  corr_vals <- result$`Corr. with Portfolio`
+  expect_equal(corr_vals, sort(corr_vals, decreasing = TRUE))
+})
+
+test_that("calc_corr correlation values are rounded to 3 decimal places", {
+  result <- calc_corr(create_mock_returns_with_portfolio())
+
+  rounded <- round(result$`Corr. with Portfolio`, 3)
+  expect_equal(result$`Corr. with Portfolio`, rounded)
 })

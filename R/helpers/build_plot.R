@@ -10,17 +10,7 @@ build_plot <- function(returns_with_portfolio, ticker_subset, title) {
     ggplot(aes(
       date,
       diff_dtd,
-      color = symbol,
-      text = paste0(
-        "Date: ",
-        format(date, "%Y-%m-%d"),
-        "<br>",
-        "Symbol: ",
-        symbol,
-        "<br>",
-        "Return: ",
-        scales::percent(diff_dtd, accuracy = 0.01)
-      )
+      color = symbol
     )) +
     geom_line(
       data = filter(plot_data, symbol != "PORTFOLIO"),
@@ -43,5 +33,14 @@ build_plot <- function(returns_with_portfolio, ticker_subset, title) {
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-  ggplotly(p) |> config(displayModeBar = FALSE)
+  ggplotly(p) |>
+    style(
+      hovertemplate = paste0(
+        "Date: %{x|%Y-%m-%d}<br>",
+        "Symbol: %{fullData.name}<br>",
+        "Return: %{y:.2%}<br>",
+        "<extra></extra>"
+      )
+    ) |>
+    config(displayModeBar = FALSE)
 }

@@ -178,7 +178,7 @@ server <- function(input, output, session) {
       select(date, symbol, cumulative_return)
   })
 
-  # Join tables for following computations
+  # Join cumulative returns + portfolio for plots
   data_returns_with_portfolio_non_esg <- reactive({
     bind_rows(
       data_cum_returns_non_esg() |>
@@ -192,6 +192,27 @@ server <- function(input, output, session) {
       data_cum_returns_esg() |>
         select(date, symbol, diff_dtd = cumulative_return),
       data_cum_portfolio_esg()
+    )
+  })
+
+  # Join daily returns + portfolio for correlations
+  data_daily_with_portfolio_non_esg <- reactive({
+    bind_rows(
+      data_returns_non_esg() |>
+        select(date, symbol, diff_dtd = daily_return),
+      data_portfolio_non_esg() |>
+        mutate(symbol = "PORTFOLIO") |>
+        select(date, symbol, diff_dtd = portfolio.returns)
+    )
+  })
+
+  data_daily_with_portfolio_esg <- reactive({
+    bind_rows(
+      data_returns_esg() |>
+        select(date, symbol, diff_dtd = daily_return),
+      data_portfolio_esg() |>
+        mutate(symbol = "PORTFOLIO") |>
+        select(date, symbol, diff_dtd = portfolio.returns)
     )
   })
 
@@ -264,7 +285,7 @@ server <- function(input, output, session) {
       is.null(validate_inputs()$errors),
       paste(validate_inputs()$errors, collapse = "\n")
     ))
-    calc_corr(data_returns_with_portfolio_non_esg())
+    calc_corr(data_daily_with_portfolio_non_esg())
   })
 
   corr_esg <- reactive({
@@ -272,7 +293,7 @@ server <- function(input, output, session) {
       is.null(validate_inputs()$errors),
       paste(validate_inputs()$errors, collapse = "\n")
     ))
-    calc_corr(data_returns_with_portfolio_esg())
+    calc_corr(data_daily_with_portfolio_esg())
   })
 
   # === PLOTS ===

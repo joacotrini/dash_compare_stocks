@@ -16,17 +16,7 @@ build_comparison_plot <- function(
       date,
       cumulative_return,
       color = portfolio,
-      linetype = portfolio,
-      text = paste0(
-        "Date: ",
-        format(date, "%Y-%m-%d"),
-        "<br>",
-        "Portfolio: ",
-        portfolio,
-        "<br>",
-        "Return: ",
-        scales::percent(cumulative_return, accuracy = 0.01)
-      )
+      linetype = portfolio
     )
   ) +
     geom_line(linewidth = 1.2) +
@@ -44,5 +34,13 @@ build_comparison_plot <- function(
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-  ggplotly(p) |> config(displayModeBar = FALSE)
+  ggplotly(p) |>
+    style(
+      hovertemplate = paste0(
+        "Date: %{x|%Y-%m-%d}<br>",
+        "Return: %{y:.2%}<br>",
+        "<extra>%{fullData.name}</extra>"
+      )
+    ) |>
+    config(displayModeBar = FALSE)
 }
