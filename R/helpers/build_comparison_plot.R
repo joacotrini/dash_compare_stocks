@@ -10,15 +10,15 @@ build_comparison_plot <- function(
     data_portfolio_esg |> mutate(portfolio = "ESG")
   )
 
-  p <- ggplot(
-    plot_data,
-    aes(
-      date,
-      cumulative_return,
-      color = portfolio,
-      linetype = portfolio
-    )
-  ) +
+  p <- plot_data |>
+    ggplot(
+      aes(
+        date,
+        cumulative_return,
+        color = portfolio,
+        linetype = portfolio
+      )
+    ) +
     geom_line(linewidth = 1.2) +
     geom_hline(yintercept = 0, linetype = "dotted", color = "gray50") +
     scale_x_date(date_breaks = "3 months", date_labels = "%b-%Y") +
@@ -35,12 +35,5 @@ build_comparison_plot <- function(
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
   ggplotly(p) |>
-    style(
-      hovertemplate = paste0(
-        "Date: %{x|%Y-%m-%d}<br>",
-        "Return: %{y:.2%}<br>",
-        "<extra>%{fullData.name}</extra>"
-      )
-    ) |>
     config(displayModeBar = FALSE)
 }

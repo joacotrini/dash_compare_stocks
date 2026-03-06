@@ -4,7 +4,9 @@ build_plot <- function(returns_with_portfolio, ticker_subset, title) {
   symbols <- ticker_subset |> pull(symbol)
 
   plot_data <- returns_with_portfolio |>
-    mutate(symbol = factor(symbol, levels = c(symbols, "PORTFOLIO")))
+    mutate(
+      symbol = factor(symbol, levels = c(symbols, "PORTFOLIO"))
+    )
 
   p <- plot_data |>
     ggplot(aes(
@@ -34,13 +36,5 @@ build_plot <- function(returns_with_portfolio, ticker_subset, title) {
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
   ggplotly(p) |>
-    style(
-      hovertemplate = paste0(
-        "Date: %{x|%Y-%m-%d}<br>",
-        "Symbol: %{fullData.name}<br>",
-        "Return: %{y:.2%}<br>",
-        "<extra></extra>"
-      )
-    ) |>
     config(displayModeBar = FALSE)
 }
