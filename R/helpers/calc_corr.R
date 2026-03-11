@@ -1,6 +1,6 @@
 calc_corr <- function(dtd_with_portfolio) {
   corr_matrix <- dtd_with_portfolio |>
-    pivot_wider(names_from = symbol, values_from = diff_dtd) |>
+    pivot_wider(names_from = symbol, values_from = daily_return) |>
     select(-date) |>
     correlate() |>
     mutate(across(where(is.numeric), ~ round(.x, 3)))

@@ -5,14 +5,26 @@ build_plot <- function(returns_with_portfolio, ticker_subset, title) {
 
   plot_data <- returns_with_portfolio |>
     mutate(
-      symbol = factor(symbol, levels = c(symbols, "PORTFOLIO"))
+      symbol = factor(symbol, levels = c(symbols, "PORTFOLIO")),
+      text = paste0(
+        "Date: ",
+        format(date, "%b %d, %Y"),
+        "\n",
+        "Cumulative Return: ",
+        scales::percent(cumulative_return, accuracy = 0.1),
+        "\n",
+        "Symbol: ",
+        symbol
+      )
     )
 
   p <- plot_data |>
     ggplot(aes(
       date,
-      diff_dtd,
-      color = symbol
+      cumulative_return,
+      color = symbol,
+      text = text,
+      group = 1
     )) +
     geom_line(
       data = filter(plot_data, symbol != "PORTFOLIO"),
@@ -35,6 +47,6 @@ build_plot <- function(returns_with_portfolio, ticker_subset, title) {
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-  ggplotly(p) |>
+  ggplotly(p, tooltip = "text") |>
     config(displayModeBar = FALSE)
 }
