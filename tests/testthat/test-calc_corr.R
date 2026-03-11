@@ -6,13 +6,13 @@ source("../../R/helpers/calc_corr.R")
 create_mock_returns_with_portfolio <- function() {
   set.seed(42)
   tibble(
-    date   = rep(as.Date("2024-01-01") + 0:49, each = 4),
+    date = rep(as.Date("2024-01-01") + 0:49, each = 4),
     symbol = rep(c("A", "B", "C", "PORTFOLIO"), times = 50),
-    diff_dtd = c(
-      rnorm(50, 0.001, 0.01),  # A
-      rnorm(50, 0.001, 0.01),  # B
-      rnorm(50, 0.001, 0.01),  # C
-      rnorm(50, 0.001, 0.008)  # PORTFOLIO (lower vol)
+    daily_return = c(
+      rnorm(50, 0.001, 0.01), # A
+      rnorm(50, 0.001, 0.01), # B
+      rnorm(50, 0.001, 0.01), # C
+      rnorm(50, 0.001, 0.008) # PORTFOLIO (lower vol)
     )
   )
 }
@@ -69,8 +69,11 @@ test_that("calc_corr Stock column contains all individual symbols", {
 test_that("calc_corr correlation values are between -1 and 1", {
   result <- calc_corr(create_mock_returns_with_portfolio())
 
-  expect_true(all(result$`Corr. with Portfolio` >= -1 &
-                  result$`Corr. with Portfolio` <= 1, na.rm = TRUE))
+  expect_true(all(
+    result$`Corr. with Portfolio` >= -1 &
+      result$`Corr. with Portfolio` <= 1,
+    na.rm = TRUE
+  ))
 })
 
 test_that("calc_corr results are sorted descending by correlation", {
