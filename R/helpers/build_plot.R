@@ -1,6 +1,4 @@
 build_plot <- function(returns_with_portfolio, ticker_subset, title) {
-  library(plotly)
-
   symbols <- ticker_subset |> pull(symbol)
 
   plot_data <- returns_with_portfolio |>

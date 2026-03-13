@@ -3,8 +3,6 @@ build_comparison_plot <- function(
   data_portfolio_esg,
   title
 ) {
-  library(plotly)
-
   plot_data <- bind_rows(
     data_portfolio_non_esg |> mutate(portfolio = "Non-ESG"),
     data_portfolio_esg |> mutate(portfolio = "ESG")
