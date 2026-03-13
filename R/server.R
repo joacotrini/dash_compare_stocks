@@ -4,6 +4,7 @@ library(plotly)
 library(shiny)
 library(tidyquant)
 library(tidyverse)
+library(zoo)
 
 # Source helpers
 source_helpers <- function() {
@@ -127,7 +128,7 @@ server <- function(input, output, session) {
     )
   })
 
-  # Calculate daily returns
+  # Calculate  returns
   data_returns_non_esg <- reactive({
     calc_returns(data_filtered(), data_tickers_non_esg())
   })
