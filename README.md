@@ -14,6 +14,12 @@ This is a **personal project** built to test investment portfolio options tailor
 
 ------------------------------------------------------------------------
 
+## Demonstration
+
+![](https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExMGxjaXFteWFncnViZzZmYjIxOW5zcXBkNnVwMXIyeGtvNmc3ODY5dSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/kiFKMU4L9orfpVY9Df/giphy.gif)
+
+------------------------------------------------------------------------
+
 ## Features
 
 -   **Real-time Portfolio Comparison**: Visualize cumulative returns of ESG vs Non-ESG portfolios side-by-side
